@@ -1,0 +1,334 @@
+import json
+
+notebook = {
+  'cells': [
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '<div style=\"background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #0d2137 100%); padding: 40px; border-radius: 12px; border: 1px solid #30363d; text-align: center; color: white;\">\n',
+        '  <span style=\"background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.3); color: #58a6ff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;\">CCDAK Training · Lab 1</span>\n',
+        '  <h1 style=\"color: #e6edf3; font-size: 2.4em; font-weight: bold; margin-top: 15px;\">Kafka Cluster Setup & Validation</h1>\n',
+        '  <p style=\"color: #8b949e; font-size: 1.1em;\">Spin up a full Confluent Kafka ecosystem with Docker and validate every component is healthy.</p>\n',
+        '</div>\n',
+        '\n',
+        '---\n',
+        '\n',
+        '## 🎯 Overview\n',
+        '\n',
+        'In this lab, you will spin up a complete **Confluent Kafka ecosystem** using Docker Compose and validate that every component is working correctly. \n',
+        '\n',
+        'By the end of this lab, you will have hands-on experience with:\n',
+        '- 🐳 Starting a multi-component Kafka cluster\n',
+        '- 🔍 Verifying Zookeeper, Kafka Broker, Schema Registry, and Kafka Connect\n',
+        '- 📋 Creating Kafka topics and inspecting their configuration\n',
+        '- 🚀 Producing and consuming messages end-to-end\n',
+        '\n',
+        '---\n',
+        '\n',
+        '## ⚙️ Prerequisites\n',
+        '\n',
+        'Make sure the following are installed on your machine before starting:\n',
+        '\n',
+        '| Tool | Minimum Version | Check Command |\n',
+        '|---|---|---|\n',
+        '| **Docker Desktop** | 4.x+ | `docker --version` |\n',
+        '| **Docker Compose** | v2+ | `docker compose version` |\n',
+        '\n',
+        '<div style=\"background-color: rgba(88, 166, 255, 0.1); border-left: 4px solid #58a6ff; padding: 10px 15px; margin: 15px 0; border-radius: 4px;\">\n',
+        '  <strong>📌 Note:</strong> Ensure Docker Desktop is running before proceeding.\n',
+        '</div>\n',
+        '\n',
+        '---\n',
+        '\n',
+        '## 🏗️ Architecture\n',
+        '\n',
+        'The Docker Compose stack spins up the following services:\n',
+        '\n',
+        '<div style=\"text-align:center; margin: 20px 0;\">\n',
+        '  <img src=\"kafka_architecture.png\" alt=\"Kafka Ecosystem Architecture\" style=\"max-width:100%; border-radius: 12px; border: 1px solid #30363d; background: #fff; padding: 8px;\"/>\n',
+        '</div>'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 1:</span> Start the Kafka Cluster\n',
+        '\n',
+        'Execute the cell below to start all services in detached mode (`-d`). \n',
+        '\n',
+        '<div style=\"background-color: rgba(63, 185, 80, 0.1); border-left: 4px solid #3fb950; padding: 10px 15px; margin: 15px 0; border-radius: 4px;\">\n',
+        '  <strong>💡 Tip:</strong> The `-d` flag runs containers in the background. Without it, logs would lock up the cell execution.\n',
+        '</div>'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker-compose up -d'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 2:</span> Verify All Containers Are Running\n',
+        '\n',
+        'Check the status of all running containers. \n',
+        '\n',
+        '**All 5 containers should show an \"Up\" status.** If any show `Exited`, check logs using `docker logs <container-name>`.'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 3:</span> Validate Zookeeper\n',
+        '\n',
+        'Zookeeper is the coordination service for Kafka. Let\\'s verify it is running and Kafka has registered itself.\n',
+        '\n',
+        '<div style=\"background-color: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); padding: 10px 15px; margin: 15px 0; border-radius: 8px; color: #3fb950;\">\n',
+        '  <strong>✅ Success Criteria:</strong> Look for <code>brokers</code> and <code>controller</code> in the output list. This confirms Kafka is registered with Zookeeper.\n',
+        '</div>'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-zookeeper-1 bash -c \"zookeeper-shell localhost:2181 ls /\"'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 4:</span> Validate the Kafka Broker\n',
+        '\n',
+        'Verify the Kafka broker is accepting connections and responding to API requests.\n',
+        '\n',
+        '<div style=\"background-color: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); padding: 10px 15px; margin: 15px 0; border-radius: 8px; color: #3fb950;\">\n',
+        '  <strong>✅ Success Criteria:</strong> You should see <code>localhost:9092 (id: 1 rack: null)</code> followed by a list of supported APIs in the output.\n',
+        '</div>'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-kafka-1 kafka-broker-api-versions --bootstrap-server localhost:9092'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 5:</span> Create a Kafka Topic\n',
+        '\n',
+        'Create a test topic named `test-topic` with **3 partitions** and a **replication factor of 1**.'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-kafka-1 kafka-topics \\\n',
+        '  --bootstrap-server localhost:9092 \\\n',
+        '  --create \\\n',
+        '  --topic test-topic \\\n',
+        '  --partitions 3 \\\n',
+        '  --replication-factor 1'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 6:</span> List & Describe Topics\n',
+        '\n',
+        'Verify your topic was created by listing all topics on the broker, then describe its partition layout.'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-kafka-1 kafka-topics --bootstrap-server localhost:9092 --list'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-kafka-1 kafka-topics --bootstrap-server localhost:9092 --describe --topic test-topic'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 7:</span> Produce & Consume Messages\n',
+        '\n',
+        '<div style=\"background-color: rgba(227, 179, 65, 0.1); border-left: 4px solid #e3b341; padding: 10px 15px; margin: 15px 0; border-radius: 4px;\">\n',
+        '  <strong>⚠️ Important:</strong> Do NOT run the commands below in this Jupyter notebook. Interactive commands will cause the notebook cell to hang indefinitely. Please open <strong>two separate terminals</strong> to run them.\n',
+        '</div>\n',
+        '\n',
+        '**Terminal 1 (Start Producer):**\n',
+        '```bash\n',
+        'docker exec -it kafka_training-kafka-1 kafka-console-producer \\\n',
+        '  --bootstrap-server localhost:9092 \\\n',
+        '  --topic test-topic\n',
+        '```\n',
+        '*(Type messages and press Enter after each)*\n',
+        '\n',
+        '**Terminal 2 (Start Consumer):**\n',
+        '```bash\n',
+        'docker exec -it kafka_training-kafka-1 kafka-console-consumer \\\n',
+        '  --bootstrap-server localhost:9092 \\\n',
+        '  --topic test-topic \\\n',
+        '  --from-beginning\n',
+        '```'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 8:</span> Validate Schema Registry\n',
+        '\n',
+        'The Schema Registry stores and manages Avro/JSON/Protobuf schemas. Test it is accessible.'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-schema-registry-1 curl -s http://localhost:8081/subjects'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 9:</span> Validate Kafka Connect\n',
+        '\n',
+        'Kafka Connect is a framework for streaming data between Kafka and external systems. Verify it is running.'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker exec kafka_training-kafka-connect-1 curl -s http://localhost:8083/connectors'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '---\n',
+        '\n',
+        '## <span style=\"color: #58a6ff;\">Step 10:</span> Access Confluent Control Center (UI)\n',
+        '\n',
+        'Confluent Control Center provides a web UI for monitoring and managing your Kafka cluster.\n',
+        '\n',
+        '1. Open your browser and navigate to: <a href=\"http://localhost:9021\" target=\"_blank\"><strong>http://localhost:9021</strong></a>\n',
+        '2. You should see the **Control Center** dashboard.\n',
+        '\n',
+        '**Things to explore in the UI:**\n',
+        '- **Brokers** — View broker health and metrics\n',
+        '- **Topics** — See `test-topic` and its partition details\n',
+        '- **Schema Registry** — View registered schemas\n',
+        '- **Connect** — Manage Kafka connectors\n',
+        '\n',
+        '---\n',
+        '\n',
+        '## 🧹 Cleanup\n',
+        '\n',
+        'When you are done with this lab, you can stop and remove all containers by executing the cell below:'
+      ]
+    },
+    {
+      'cell_type': 'code',
+      'execution_count': None,
+      'metadata': {},
+      'outputs': [],
+      'source': [
+        '!docker-compose down -v'
+      ]
+    },
+    {
+      'cell_type': 'markdown',
+      'metadata': {},
+      'source': [
+        '<div style=\"background-color: rgba(88, 166, 255, 0.1); border: 1px solid rgba(88, 166, 255, 0.3); padding: 20px; text-align: center; border-radius: 8px; margin-top: 40px;\">\n',
+        '  <h3 style=\"color: #58a6ff; margin-bottom: 10px;\">🎉 Lab 1 Complete!</h3>\n',
+        '  <p style=\"color: #8b949e; margin: 0;\">You have successfully deployed and validated a complete Kafka cluster.</p>\n',
+        '</div>'
+      ]
+    }
+  ],
+  'metadata': {
+    'kernelspec': {
+      'display_name': 'Python 3',
+      'language': 'python',
+      'name': 'python3'
+    },
+    'language_info': {
+      'name': 'python',
+      'version': '3.9'
+    }
+  },
+  'nbformat': 4,
+  'nbformat_minor': 4
+}
+
+with open(r'd:\trainings\CCDAK-2\kafka_training\Labs\Lab1\instructions.ipynb', 'w', encoding='utf-8') as f:
+    json.dump(notebook, f, indent=2)
+
+print('Notebook completely restyled successfully!')
