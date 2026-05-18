@@ -1,0 +1,6 @@
+user1:100
+user2:150
+user1:120
+user3:50
+user2:80
+user1:200
