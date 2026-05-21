@@ -1,0 +1,6 @@
+order_id,customer_name,product,quantity,price
+ORD001,Alice Johnson,Laptop,1,999.99
+ORD002,Bob Smith,Mouse,5,25.50
+ORD003,Carol Davis,Keyboard,2,79.99
+ORD004,David Wilson,Monitor,3,299.99
+ORD005,Eve Thompson,Headphones,4,149.99
